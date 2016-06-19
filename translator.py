@@ -153,3 +153,20 @@ language_codes = ['ar', 'zh', 'hi', 'es', 'pt',
                   'nl', 'et', 'fi', 'he', 'id',
                   'ms', 'ro', 'th', 'ur', 'vi',
                   'sv', 'cy']
+
+
+if __name__ == "__main__":
+
+    #this is the folder of your default values folder...where the values-{language code} folders will be created
+    destinationFolder = r".......AndroidStudioProjects\MusiQuik\app\src\main\res"
+
+    for language in language_codes:
+
+        val = translateStrings(originalValueT, "en", language)
+        val2 = translateStringArrays(tt, "en", language)
+        output = constructStringXML(nameAttributeT, val, val2)
+
+        completeFolderPath = destinationFolder + r"\values-" + language
+        os.makedirs(completeFolderPath)
+        with open(completeFolderPath + r"\strings.xml", "w") as fd:
+            fd.write(output)
