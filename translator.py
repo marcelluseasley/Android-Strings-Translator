@@ -47,3 +47,34 @@ xml = """<resources>
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
 """
+
+def justResources(argXML):
+    soup = BeautifulSoup(argXML)
+    if soup.body:
+        return soup.body.next
+    elif soup.html:
+        return soup.html.next
+    else:
+        return soup
+
+soup = justResources(xml)
+
+#handle strings
+
+ss = soup.find_all("string")
+
+nameAttributeL = list()
+originalValueL = list()
+
+for s in ss:
+    nameAttributeL.append(s["name"])
+    originalValueL.append(s.text)
+
+nameAttributeT = tuple(nameAttributeL) # cast to tuple so order cannot accidentally change
+originalValueT = tuple(originalValueL) # same for the values; they correspond to the values tuple
+
+#construct XML for the TranslateArray call
+
+tt = soup.find_all("string-array") # the string array section..this gets passed to translateStringArrays
+
+
