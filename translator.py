@@ -78,3 +78,78 @@ originalValueT = tuple(originalValueL) # same for the values; they correspond to
 tt = soup.find_all("string-array") # the string array section..this gets passed to translateStringArrays
 
 
+def translateStrings(originalValueT, sourceLanguage, destinationLanguage):
+    payloadBegin = """<TranslateArrayRequest>
+    <AppId />
+    <From>{}</From>
+    <Options>
+    <Category xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    <ContentType xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    <ReservedFlags xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    <State xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    <Uri xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    <User xmlns=\"http://schemas.datacontract.org/2004/07/Microsoft.MT.Web.Service.V2\" />
+    </Options>
+    <Texts>
+    """.format(sourceLanguage)
+
+    payloadEnd = """</Texts>
+    <To>{}</To>
+    </TranslateArrayRequest>
+    """.format(destinationLanguage)
+
+    payloadString =""
+
+    for originalValue in originalValueT:
+        payloadString += """<string xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\">{}</string>""".format(originalValue)
+
+    finalPayload = payloadBegin + payloadString + payloadEnd
+
+    response = requests.request("POST", apiCallUrl, data=finalPayload, headers=headers)
+    #response.encoding="utf-8"
+
+    response.raise_for_status()
+
+    stringSoup = BeautifulSoup(response.text)
+
+    translatedStringsL=list()
+    for translatedString in stringSoup.find_all("translatearrayresponse"):
+        translatedStringsL.append(translatedString.translatedtext.text)
+
+    translatedStringsT = tuple(translatedStringsL)
+
+    return translatedStringsT
+
+
+def translateStringArrays(stringArrayChunk, sourceLanguage, destinationLanguage):
+    stringArrayChunkD = dict()
+    stringArrayChunkL = list()
+    for t in stringArrayChunk:
+        stringArrayChunkD[t["name"]] = translateStrings(tuple(t.text.strip().split("\n")), sourceLanguage,
+                                                        destinationLanguage)
+
+    return stringArrayChunkD
+
+
+def constructStringXML(nameAttributes, translatedStrings,stringArraysDictionary):
+
+    root = Element("resources")
+    for i in range(len(nameAttributes)):
+        child = SubElement(root, "string", name=nameAttributes[i])
+        child.text = translatedStrings[i]
+
+    for key in stringArraysDictionary:
+        child = SubElement(root, "string-array", name=key)
+        for item in stringArraysDictionary[key]:
+            child2 = SubElement(child, "item")
+            child2.text = item
+
+    return etree.tostring(root,encoding="UTF-8")
+
+
+language_codes = ['ar', 'zh', 'hi', 'es', 'pt',
+                  'ru', 'ja', 'fr', 'de', 'ko',
+                  'bg', 'ca', 'hr', 'cs', 'da',
+                  'nl', 'et', 'fi', 'he', 'id',
+                  'ms', 'ro', 'th', 'ur', 'vi',
+                  'sv', 'cy']
